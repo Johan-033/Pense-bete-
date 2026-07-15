@@ -79,18 +79,26 @@
   .flag.on{filter:none; opacity:1; transform:scale(1.15)}
   .item.urgent{background:#FFF7F2; border-left-color:var(--danger) !important}
 
+  /* ---------- Courses : ajout direct par rayon ---------- */
+  .inlineadd{display:flex; gap:8px; margin:0 0 6px}
+  .inlineadd input{flex:1; min-width:0; border:1.5px dashed #DDD5C9; background:transparent;
+    border-radius:12px; padding:9px 12px; font-size:15px; color:var(--ink); outline:none}
+  .inlineadd input:focus{border-color:var(--achats); border-style:solid; background:var(--card)}
+  .inlineadd button{width:40px; flex:0 0 40px; border:none; border-radius:12px; background:var(--achats);
+    color:#fff; font-size:20px; font-weight:700; cursor:pointer; opacity:.85}
+
   /* ---------- Dashboard ---------- */
   .hero{background:linear-gradient(120deg,#FFFFFF,#FFF4EA); border-radius:var(--r);
     box-shadow:var(--shadow); padding:18px 16px; margin-top:6px}
   .hero .hi{font-size:19px; font-weight:800}
   .hero .dt{font-size:13.5px; color:var(--ink2); margin-top:3px; text-transform:capitalize}
   .sech{font-size:16px; font-weight:800; margin:22px 2px 2px; letter-spacing:-.2px}
-  .tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px}
+  .tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px}
   .tile{background:var(--card); border:none; border-radius:var(--r); box-shadow:var(--shadow);
     padding:12px 4px; text-align:center; cursor:pointer; font-family:inherit; color:var(--ink)}
   .tile .ic{font-size:22px}
   .tile .num{font-size:20px; font-weight:800; margin-top:4px}
-  .tile .lb{font-size:11.5px; color:var(--ink2); font-weight:700; margin-top:1px}
+  .tile .lb{font-size:11px; color:var(--ink2); font-weight:700; margin-top:1px}
   .urgcard{margin-top:16px}
   .urgcard .zen{background:var(--card); border-radius:var(--r); box-shadow:var(--shadow);
     padding:18px; text-align:center; color:var(--ink2); font-size:14.5px}
@@ -187,7 +195,7 @@
           <input id="sbUrl" placeholder="https://xxxx.supabase.co" autocomplete="off">
         </div>
         <div class="joinrow">
-          <input id="sbKey" placeholder="Clé anon public (eyJ…)" autocomplete="off">
+          <input id="sbKey" placeholder="Clé anon public (eyJ… ou sb_publishable_…)" autocomplete="off">
         </div>
         <button class="btn primary" id="createSpace">Connecter et créer l'espace</button>
       </div>
@@ -235,9 +243,20 @@ const TABS = {
            {id:'commun',label:'Nous deux', emoji:'💛', color:'var(--commun)'} ] },
   achats: { label:'À acheter', icon:'🛒', accent:'var(--achats)',
     cats:[ {id:'maison', label:'Maison', emoji:'🏠', color:'var(--achats)'},
-           {id:'courses',label:'Courses',emoji:'🧺', color:'var(--achats)'},
            {id:'johan',  label:'Johan',  emoji:'🙋‍♂️', color:'var(--johan)'},
            {id:'lou',    label:'Lou',    emoji:'🙋‍♀️', color:'var(--lou)'} ] },
+  courses:{ label:'Courses', icon:'🧺', accent:'var(--achats)',
+    cats:[ {id:'fruits',  label:'Fruits & légumes',    emoji:'🥦', color:'var(--achats)'},
+           {id:'viande',  label:'Viande & poisson',    emoji:'🥩', color:'var(--achats)'},
+           {id:'fromages',label:'Fromages & crèmerie', emoji:'🧀', color:'var(--achats)'},
+           {id:'boulangerie',    label:'Boulangerie',     emoji:'🥖', color:'var(--achats)'},
+           {id:'epicerie-salee', label:'Épicerie salée',  emoji:'🥫', color:'var(--achats)'},
+           {id:'epicerie-sucree',label:'Épicerie sucrée', emoji:'🍫', color:'var(--achats)'},
+           {id:'boissons',label:'Boissons',            emoji:'🧃', color:'var(--achats)'},
+           {id:'surgeles',label:'Surgelés',            emoji:'🧊', color:'var(--achats)'},
+           {id:'hygiene', label:'Hygiène',             emoji:'🧴', color:'var(--achats)'},
+           {id:'entretien',label:'Entretien',          emoji:'🧽', color:'var(--achats)'},
+           {id:'autres',  label:'Autres',              emoji:'📦', color:'var(--achats)'} ] },
   sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',
     cats:[ {id:'resto',   label:'Resto',   emoji:'🍽️', color:'var(--sorties)'},
            {id:'brunch',  label:'Brunch',  emoji:'🥐', color:'var(--sorties)'},
@@ -249,6 +268,7 @@ const TABS = {
 /* Vues de navigation : "todo" regroupe À faire + À acheter sur un seul écran */
 const VIEWS = {
   todo:   { label:'À faire', icon:'✅', accent:'var(--commun)', tabs:['notes','achats'] },
+  courses:{ label:'Courses', icon:'🧺', accent:'var(--achats)', tabs:['courses'] },
   infos:  { label:'Infos',   icon:'💡', accent:'var(--johan)',  tabs:['infos'] },
   sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',tabs:['sorties'] }
 };
@@ -268,7 +288,7 @@ const THEMES = [
     kw:['reparer','ranger','nettoyer','laver','jardin','tondre','bricol','monter','installer','peindre','poubelle','linge','menage','arroser'] }
 ];
 const DIVERS = { id:'divers', label:'Divers', emoji:'📌' };
-function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 function classify(text){
   const n = norm(text);
   for(const th of THEMES) if(th.kw.some(k=>n.includes(k))) return th;
@@ -294,6 +314,12 @@ function load(){
   // purge vieux éléments supprimés (>45 jours)
   const cutoff = Date.now() - 45*24*3600*1000;
   state.items = (state.items||[]).filter(i => !(i.del && i.ts < cutoff));
+  // migration : les anciens "Courses" de À acheter partent dans la rubrique Courses
+  let migrated = false;
+  for(const i of state.items){
+    if(i.tab==='achats' && i.cat==='courses'){ i.tab='courses'; i.cat='autres'; i.ts=Date.now(); migrated=true; }
+  }
+  if(migrated){ save(); dirty = true; }
 }
 function save(){ localStorage.setItem('pb_state', JSON.stringify(state)); }
 function saveSync(){ localStorage.setItem('pb_sync', JSON.stringify(sync)); }
@@ -305,6 +331,14 @@ function addItem(text){
   const [tab, cat] = document.getElementById('addCat').value.split('|');
   state.items.push({ id:uid(), tab, cat, text, done:false, urg:0, ts:Date.now(), del:0 });
   touch(); render();
+}
+function addCourse(inp){
+  const text = inp.value.trim(); if(!text) return;
+  const cat = inp.dataset.cat;
+  state.items.push({ id:uid(), tab:'courses', cat, text, done:false, urg:0, ts:Date.now(), del:0 });
+  touch(); render();
+  const again = document.querySelector('.inlineadd input[data-cat="'+cat+'"]');
+  if(again) again.focus();
 }
 function toggleItem(id){
   const it = state.items.find(i=>i.id===id); if(!it) return;
@@ -387,7 +421,8 @@ async function doSync(){
 }
 
 async function createSpace(){
-  const u = document.getElementById('sbUrl').value.trim().replace(/\/+$/,'');
+  let u = document.getElementById('sbUrl').value.trim().replace(/\/+$/,'');
+  u = u.replace(/\/rest\/v1.*$/,'').replace(/\/+$/,'');
   const k = document.getElementById('sbKey').value.trim();
   if(!/^https:\/\/.+\.supabase\.co$/.test(u)){ toast('URL invalide — format attendu : https://xxxx.supabase.co'); return; }
   if(!k){ toast('Colle la clé "anon public" de ton projet'); return; }
@@ -451,6 +486,9 @@ function visibleItems(){
     const chip = ui.chip.todo;
     return state.items.filter(i => !i.del && (i.tab==='notes'||i.tab==='achats') &&
       (chip==='all' || (chip==='todo' && i.tab==='notes') || (chip==='achat' && i.tab==='achats')));
+  }
+  if(ui.tab==='courses'){
+    return state.items.filter(i => i.tab==='courses' && !i.del);
   }
   const chip = ui.chip[ui.tab];
   return state.items.filter(i => i.tab===ui.tab && !i.del && (chip==='all' || i.cat===chip));
@@ -568,18 +606,27 @@ function bindItemEvents(box){
 
 function renderList(){
   const box = document.getElementById('list');
-  const items = visibleItems();
-  const open = items.filter(i=>!i.done).sort((a,b)=>(b.urg||0)-(a.urg||0) || b.ts-a.ts);
-  const done = items.filter(i=>i.done).sort((a,b)=>b.ts-a.ts);
+  /* les éléments cochés restent affichés à leur place (barrés), en fin de groupe */
+  const items = visibleItems().sort((a,b)=>
+    ((a.done?1:0)-(b.done?1:0)) || ((b.urg||0)-(a.urg||0)) || (b.ts-a.ts));
+  const done = items.filter(i=>i.done);
   let html = '';
-  if(!items.length){
+  if(ui.tab==='courses'){
+    for(const c of TABS.courses.cats){
+      const grp = items.filter(i=>i.cat===c.id);
+      const nOpen = grp.filter(i=>!i.done).length;
+      html += `<div class="grouph">${c.emoji} ${c.label}${nOpen?' · '+nOpen:''}</div>`;
+      html += grp.map(i=>itemHTML(i)).join('');
+      html += `<div class="inlineadd"><input data-cat="${c.id}" placeholder="Ajouter…" autocomplete="off" enterkeyhint="done"><button data-addcat="${c.id}">+</button></div>`;
+    }
+  } else if(!items.length){
     const [e,p] = EMPTY[ui.tab];
     html = `<div class="empty"><div class="e">${e}</div><p>${p.replace('\n','<br>')}</p></div>`;
   } else {
     if(ui.tab==='todo'){
       const chip = ui.chip.todo;
-      const notes = open.filter(i=>i.tab==='notes');
-      const achats = open.filter(i=>i.tab==='achats');
+      const notes = items.filter(i=>i.tab==='notes');
+      const achats = items.filter(i=>i.tab==='achats');
       if(chip!=='achat' && notes.length){
         html += `<div class="sech" style="color:var(--commun)">✅ À faire</div>`;
         for(const th of THEMES.concat([DIVERS])){
@@ -600,27 +647,26 @@ function renderList(){
       }
     } else if(TABS[ui.tab].all && ui.chip[ui.tab]==='all'){
       for(const c of TABS[ui.tab].cats){
-        const grp = open.filter(i=>i.cat===c.id);
+        const grp = items.filter(i=>i.cat===c.id);
         if(!grp.length) continue;
         html += `<div class="grouph"><span class="dot" style="background:${c.color}"></span>${c.label}</div>`;
         html += grp.map(i=>itemHTML(i)).join('');
       }
     } else {
-      html += open.map(i=>itemHTML(i)).join('');
+      html += items.map(i=>itemHTML(i)).join('');
     }
-    if(done.length){
-      const show = ui.showDone[ui.tab];
-      html += `<button class="donetoggle" id="dt"><span>✅ Terminés (${done.length})</span><span>${show?'▲':'▼'}</span></button>`;
-      if(show){
-        html += done.map(i=>itemHTML(i)).join('');
-        html += `<button class="cleardone" id="cd">Supprimer les terminés</button>`;
-      }
-    }
+  }
+  if(done.length){
+    html += `<button class="cleardone" id="cd">🗑 Supprimer les éléments cochés (${done.length})</button>`;
   }
   box.innerHTML = html;
   bindItemEvents(box);
-  const dt = document.getElementById('dt');
-  if(dt) dt.onclick = ()=>{ ui.showDone[ui.tab] = !ui.showDone[ui.tab]; render(); };
+  box.querySelectorAll('.inlineadd input').forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addCourse(inp); });
+  });
+  box.querySelectorAll('[data-addcat]').forEach(b=>{
+    b.onclick = ()=>{ const inp = b.parentElement.querySelector('input'); addCourse(inp); };
+  });
   const cd = document.getElementById('cd');
   if(cd) cd.onclick = clearDone;
 }
@@ -641,10 +687,14 @@ function renderNav(){
 }
 
 function render(){
-  const home = ui.tab==='home';
-  document.getElementById('chips').style.display = home?'none':'flex';
-  document.querySelector('.addbar').style.display = home?'none':'flex';
-  if(home){ renderHome(); } else { renderChips(); renderAddBar(); renderList(); }
+  const noBar = ui.tab==='home' || ui.tab==='courses';
+  document.getElementById('chips').style.display = noBar?'none':'flex';
+  document.querySelector('.addbar').style.display = noBar?'none':'flex';
+  if(ui.tab==='home'){ renderHome(); }
+  else {
+    if(ui.tab!=='courses'){ renderChips(); renderAddBar(); }
+    renderList();
+  }
   renderNav();
 }
 
