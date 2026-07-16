@@ -14,7 +14,7 @@
   :root{
     --bg:#FAF6F0; --card:#FFFFFF; --ink:#2C2537; --ink2:#8B8496;
     --line:#EFE9E0; --johan:#4C7DF0; --lou:#F06292; --commun:#8A63D2;
-    --achats:#12B886; --sorties:#F59F00; --danger:#E5484D;
+    --achats:#12B886; --sorties:#F59F00; --valise:#0B7285; --danger:#E5484D;
     --r:18px; --shadow:0 2px 10px rgba(60,45,30,.07);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -87,18 +87,39 @@
   .inlineadd button{width:40px; flex:0 0 40px; border:none; border-radius:12px; background:var(--achats);
     color:#fff; font-size:20px; font-weight:700; cursor:pointer; opacity:.85}
 
+  /* ---------- Valise : deux colonnes Johan / Lou ---------- */
+  .valgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
+  .valcol{background:var(--card); border-radius:var(--r); box-shadow:var(--shadow);
+    padding:10px 10px 12px; border-top:4px solid var(--line); min-width:0}
+  .valhead{font-weight:800; font-size:14.5px; margin:2px 0 8px; display:flex; align-items:center; gap:6px}
+  .valhead .vn{margin-left:auto; font-size:11px; font-weight:700; color:var(--ink2);
+    background:rgba(0,0,0,.06); border-radius:999px; padding:1px 7px}
+  .vitem{display:flex; align-items:center; gap:7px; padding:7px 0; border-bottom:1px solid var(--line)}
+  .vitem .ck{width:22px; height:22px; flex:0 0 22px; font-size:12px}
+  .vitem.done .ck{background:#2FB344; border-color:#2FB344}
+  .vitem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word}
+  .vitem.done .t{text-decoration:line-through; color:var(--ink2)}
+  .vitem .del{font-size:14px; padding:2px}
+  .valadd{display:flex; gap:6px; margin-top:10px}
+  .valadd input{flex:1; min-width:0; border:1.5px dashed #DDD5C9; background:transparent;
+    border-radius:10px; padding:8px 10px; font-size:14px; color:var(--ink); outline:none}
+  .valadd input:focus{border-style:solid; background:var(--bg)}
+  .valadd button{width:34px; flex:0 0 34px; border:none; border-radius:10px; color:#fff;
+    font-size:18px; font-weight:700; cursor:pointer}
+  .valhint{text-align:center; color:var(--ink2); font-size:13px; margin-top:14px; line-height:1.5}
+
   /* ---------- Dashboard ---------- */
   .hero{background:linear-gradient(120deg,#FFFFFF,#FFF4EA); border-radius:var(--r);
     box-shadow:var(--shadow); padding:18px 16px; margin-top:6px}
   .hero .hi{font-size:19px; font-weight:800}
   .hero .dt{font-size:13.5px; color:var(--ink2); margin-top:3px; text-transform:capitalize}
   .sech{font-size:16px; font-weight:800; margin:22px 2px 2px; letter-spacing:-.2px}
-  .tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px}
+  .tiles{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:12px}
   .tile{background:var(--card); border:none; border-radius:var(--r); box-shadow:var(--shadow);
-    padding:12px 4px; text-align:center; cursor:pointer; font-family:inherit; color:var(--ink)}
-  .tile .ic{font-size:22px}
-  .tile .num{font-size:20px; font-weight:800; margin-top:4px}
-  .tile .lb{font-size:11px; color:var(--ink2); font-weight:700; margin-top:1px}
+    padding:10px 2px; text-align:center; cursor:pointer; font-family:inherit; color:var(--ink)}
+  .tile .ic{font-size:20px}
+  .tile .num{font-size:18px; font-weight:800; margin-top:3px}
+  .tile .lb{font-size:10px; color:var(--ink2); font-weight:700; margin-top:1px}
   .urgcard{margin-top:16px}
   .urgcard .zen{background:var(--card); border-radius:var(--r); box-shadow:var(--shadow);
     padding:18px; text-align:center; color:var(--ink2); font-size:14.5px}
@@ -116,14 +137,14 @@
   nav{position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,.92);
     backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
     border-top:1px solid var(--line); display:flex;
-    padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
   nav button{flex:1; border:none; background:none; cursor:pointer; padding:7px 0 5px;
-    border-radius:14px; color:var(--ink2); font-size:10.5px; font-weight:700;
+    border-radius:14px; color:var(--ink2); font-size:10px; font-weight:700;
     display:flex; flex-direction:column; align-items:center; gap:3px; position:relative}
-  nav button .i{font-size:21px; line-height:1}
-  nav button .badge{position:absolute; top:2px; right:calc(50% - 22px); background:var(--danger);
-    color:#fff; font-size:9.5px; font-weight:800; border-radius:999px; min-width:16px;
-    height:16px; line-height:16px; padding:0 4px}
+  nav button .i{font-size:20px; line-height:1}
+  nav button .badge{position:absolute; top:2px; right:calc(50% - 20px); background:var(--danger);
+    color:#fff; font-size:9px; font-weight:800; border-radius:999px; min-width:15px;
+    height:15px; line-height:15px; padding:0 4px}
   nav button.active{color:var(--ink); background:var(--bg)}
 
   /* ---------- Modal ---------- */
@@ -257,6 +278,9 @@ const TABS = {
            {id:'hygiene', label:'Hygiène',             emoji:'🧴', color:'var(--achats)'},
            {id:'entretien',label:'Entretien',          emoji:'🧽', color:'var(--achats)'},
            {id:'autres',  label:'Autres',              emoji:'📦', color:'var(--achats)'} ] },
+  valise: { label:'Valise', icon:'🧳', accent:'var(--valise)',
+    cats:[ {id:'johan', label:'Johan', emoji:'🙋‍♂️', color:'var(--johan)'},
+           {id:'lou',   label:'Lou',   emoji:'🙋‍♀️', color:'var(--lou)'} ] },
   sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',
     cats:[ {id:'resto',   label:'Resto',   emoji:'🍽️', color:'var(--sorties)'},
            {id:'brunch',  label:'Brunch',  emoji:'🥐', color:'var(--sorties)'},
@@ -270,7 +294,8 @@ const VIEWS = {
   todo:   { label:'À faire', icon:'✅', accent:'var(--commun)', tabs:['notes','achats'] },
   courses:{ label:'Courses', icon:'🧺', accent:'var(--achats)', tabs:['courses'] },
   infos:  { label:'Infos',   icon:'💡', accent:'var(--johan)',  tabs:['infos'] },
-  sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',tabs:['sorties'] }
+  sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',tabs:['sorties'] },
+  valise: { label:'Valise',  icon:'🧳', accent:'var(--valise)', tabs:['valise'] }
 };
 /* Classement automatique des "à faire" par thème (mots-clés, accents ignorés) */
 const THEMES = [
@@ -332,12 +357,12 @@ function addItem(text){
   state.items.push({ id:uid(), tab, cat, text, done:false, urg:0, ts:Date.now(), del:0 });
   touch(); render();
 }
-function addCourse(inp){
+function addInline(inp, tab){
   const text = inp.value.trim(); if(!text) return;
   const cat = inp.dataset.cat;
-  state.items.push({ id:uid(), tab:'courses', cat, text, done:false, urg:0, ts:Date.now(), del:0 });
+  state.items.push({ id:uid(), tab, cat, text, done:false, urg:0, ts:Date.now(), del:0 });
   touch(); render();
-  const again = document.querySelector('.inlineadd input[data-cat="'+cat+'"]');
+  const again = document.querySelector('[data-tabadd="'+tab+'"] input[data-cat="'+cat+'"], .inlineadd input[data-cat="'+cat+'"], .valadd input[data-cat="'+cat+'"]');
   if(again) again.focus();
 }
 function toggleItem(id){
@@ -356,6 +381,12 @@ function clearDone(){
   const now = Date.now();
   visibleItems().filter(i=>i.done).forEach(i=>{ i.del=1; i.ts=now; });
   touch(); render();
+}
+function uncheckValise(){
+  const now = Date.now();
+  state.items.forEach(i=>{ if(i.tab==='valise' && !i.del && i.done){ i.done=false; i.ts=now; } });
+  touch(); render();
+  toast('Valise réinitialisée — bon week-end ! 🧳');
 }
 function touch(){
   save(); dirty = true;
@@ -487,8 +518,8 @@ function visibleItems(){
     return state.items.filter(i => !i.del && (i.tab==='notes'||i.tab==='achats') &&
       (chip==='all' || (chip==='todo' && i.tab==='notes') || (chip==='achat' && i.tab==='achats')));
   }
-  if(ui.tab==='courses'){
-    return state.items.filter(i => i.tab==='courses' && !i.del);
+  if(ui.tab==='courses' || ui.tab==='valise'){
+    return state.items.filter(i => i.tab===ui.tab && !i.del);
   }
   const chip = ui.chip[ui.tab];
   return state.items.filter(i => i.tab===ui.tab && !i.del && (chip==='all' || i.cat===chip));
@@ -619,6 +650,29 @@ function renderList(){
       html += grp.map(i=>itemHTML(i)).join('');
       html += `<div class="inlineadd"><input data-cat="${c.id}" placeholder="Ajouter…" autocomplete="off" enterkeyhint="done"><button data-addcat="${c.id}">+</button></div>`;
     }
+    if(done.length){
+      html += `<button class="cleardone" id="cd">🗑 Supprimer les éléments cochés (${done.length})</button>`;
+    }
+  } else if(ui.tab==='valise'){
+    html += `<div class="valgrid">`;
+    for(const c of TABS.valise.cats){
+      const grp = items.filter(i=>i.cat===c.id);
+      const nOpen = grp.filter(i=>!i.done).length;
+      html += `<div class="valcol" style="border-top-color:${c.color}">
+        <div class="valhead" style="color:${c.color}">${c.emoji} ${c.label}<span class="vn">${nOpen}/${grp.length}</span></div>`;
+      html += grp.map(i=>`<div class="vitem ${i.done?'done':''}">
+        <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
+        <div class="t">${esc(i.text)}</div>
+        <button class="del" data-d="${i.id}">🗑</button></div>`).join('');
+      html += `<div class="valadd"><input data-cat="${c.id}" placeholder="Ajouter…" autocomplete="off" enterkeyhint="done"><button data-valadd="${c.id}" style="background:${c.color}">+</button></div></div>`;
+    }
+    html += `</div>`;
+    if(done.length){
+      html += `<button class="btn ghost" id="valreset" style="margin-top:14px">↺ Tout décocher (prochain départ)</button>`;
+    }
+    if(!items.length){
+      html += `<div class="valhint">🧳 Notez ici tout ce qu'il faut mettre dans la valise.<br>La liste reste d'un week-end à l'autre : cochez en préparant, décochez tout au retour !</div>`;
+    }
   } else if(!items.length){
     const [e,p] = EMPTY[ui.tab];
     html = `<div class="empty"><div class="e">${e}</div><p>${p.replace('\n','<br>')}</p></div>`;
@@ -655,20 +709,28 @@ function renderList(){
     } else {
       html += items.map(i=>itemHTML(i)).join('');
     }
-  }
-  if(done.length){
-    html += `<button class="cleardone" id="cd">🗑 Supprimer les éléments cochés (${done.length})</button>`;
+    if(done.length){
+      html += `<button class="cleardone" id="cd">🗑 Supprimer les éléments cochés (${done.length})</button>`;
+    }
   }
   box.innerHTML = html;
   bindItemEvents(box);
   box.querySelectorAll('.inlineadd input').forEach(inp=>{
-    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addCourse(inp); });
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addInline(inp, 'courses'); });
   });
   box.querySelectorAll('[data-addcat]').forEach(b=>{
-    b.onclick = ()=>{ const inp = b.parentElement.querySelector('input'); addCourse(inp); };
+    b.onclick = ()=>{ const inp = b.parentElement.querySelector('input'); addInline(inp, 'courses'); };
+  });
+  box.querySelectorAll('.valadd input').forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addInline(inp, 'valise'); });
+  });
+  box.querySelectorAll('[data-valadd]').forEach(b=>{
+    b.onclick = ()=>{ const inp = b.parentElement.querySelector('input'); addInline(inp, 'valise'); };
   });
   const cd = document.getElementById('cd');
   if(cd) cd.onclick = clearDone;
+  const vr = document.getElementById('valreset');
+  if(vr) vr.onclick = uncheckValise;
 }
 
 function renderNav(){
@@ -687,12 +749,12 @@ function renderNav(){
 }
 
 function render(){
-  const noBar = ui.tab==='home' || ui.tab==='courses';
+  const noBar = ui.tab==='home' || ui.tab==='courses' || ui.tab==='valise';
   document.getElementById('chips').style.display = noBar?'none':'flex';
   document.querySelector('.addbar').style.display = noBar?'none':'flex';
   if(ui.tab==='home'){ renderHome(); }
   else {
-    if(ui.tab!=='courses'){ renderChips(); renderAddBar(); }
+    if(!noBar){ renderChips(); renderAddBar(); }
     renderList();
   }
   renderNav();
