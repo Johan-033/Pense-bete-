@@ -78,6 +78,19 @@
   .flag{border:none; background:none; font-size:16px; cursor:pointer; padding:6px; filter:grayscale(1); opacity:.4; transition:.15s}
   .flag.on{filter:none; opacity:1; transform:scale(1.15)}
   .item.urgent{background:#FFF7F2; border-left-color:var(--danger) !important}
+  .mapbtn{text-decoration:none; font-size:16px; padding:5px; flex:0 0 auto}
+  .item.nostrike .itxt .t{text-decoration:none; color:var(--ink)}
+  .stars{margin-top:4px; font-size:16px; letter-spacing:2px; cursor:pointer; user-select:none}
+  .stars span{filter:grayscale(1); opacity:.35}
+  .stars span.on{filter:none; opacity:1}
+
+  /* ---------- Recherche ---------- */
+  .searchbar{display:none; gap:8px; padding:10px 18px 2px}
+  .searchbar.show{display:flex}
+  .searchbar input{flex:1; min-width:0; border:1.5px solid var(--commun); background:var(--card);
+    border-radius:14px; padding:0 14px; font-size:16px; height:48px; color:var(--ink); outline:none}
+  .searchbar button{width:48px; height:48px; flex:0 0 48px; border:none; border-radius:14px;
+    background:var(--card); box-shadow:var(--shadow); font-size:16px; cursor:pointer}
 
   /* ---------- Courses : ajout direct par rayon ---------- */
   .inlineadd{display:flex; gap:8px; margin:0 0 6px}
@@ -108,18 +121,23 @@
     font-size:18px; font-weight:700; cursor:pointer}
   .valhint{text-align:center; color:var(--ink2); font-size:13px; margin-top:14px; line-height:1.5}
 
-  /* ---------- Dashboard ---------- */
+  /* ---------- Accueil ---------- */
   .hero{background:linear-gradient(120deg,#FFFFFF,#FFF4EA); border-radius:var(--r);
     box-shadow:var(--shadow); padding:18px 16px; margin-top:6px}
   .hero .hi{font-size:19px; font-weight:800}
   .hero .dt{font-size:13.5px; color:var(--ink2); margin-top:3px; text-transform:capitalize}
+  .hero .sub{font-size:14px; font-weight:600; margin-top:10px}
   .sech{font-size:16px; font-weight:800; margin:22px 2px 2px; letter-spacing:-.2px}
-  .tiles{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-top:12px}
-  .tile{background:var(--card); border:none; border-radius:var(--r); box-shadow:var(--shadow);
-    padding:10px 2px; text-align:center; cursor:pointer; font-family:inherit; color:var(--ink)}
-  .tile .ic{font-size:20px}
-  .tile .num{font-size:18px; font-weight:800; margin-top:3px}
-  .tile .lb{font-size:10px; color:var(--ink2); font-weight:700; margin-top:1px}
+  .rowlink{display:flex; align-items:center; gap:12px; width:100%; background:var(--card); border:none;
+    border-radius:var(--r); box-shadow:var(--shadow); padding:13px 14px; margin-bottom:9px;
+    cursor:pointer; font-family:inherit; color:var(--ink); text-align:left}
+  .rowlink .ric{font-size:21px; width:42px; height:42px; flex:0 0 42px; border-radius:13px;
+    display:flex; align-items:center; justify-content:center; background:var(--bg)}
+  .rowlink .rlb{flex:1; min-width:0; font-size:15.5px; font-weight:700}
+  .rowlink .rcnt{font-size:13px; font-weight:800; color:#fff; border-radius:999px;
+    min-width:27px; height:27px; line-height:27px; text-align:center; padding:0 9px}
+  .rowlink .rcnt.zero{background:var(--line) !important; color:var(--ink2)}
+  .rowlink .chev{color:#D7D0C6; font-size:20px; font-weight:700}
   .urgcard{margin-top:16px}
   .urgcard .zen{background:var(--card); border-radius:var(--r); box-shadow:var(--shadow);
     padding:18px; text-align:center; color:var(--ink2); font-size:14.5px}
@@ -187,9 +205,15 @@
   </div>
   <div class="hbtns">
     <div class="syncdot" id="syncdot" title="Synchro"></div>
+    <button class="gear" id="searchBtn" aria-label="Rechercher">🔍</button>
     <button class="gear" id="gearBtn" aria-label="Réglages">⚙️</button>
   </div>
 </header>
+
+<div class="searchbar" id="searchbar">
+  <input id="searchInput" type="text" placeholder="Rechercher partout…" autocomplete="off">
+  <button id="searchClose" aria-label="Fermer">✕</button>
+</div>
 
 <div class="chips" id="chips"></div>
 
@@ -329,7 +353,7 @@ const SB_TABLE = 'pense_bete';
 
 /* ================= State ================= */
 let state = { v:1, items:[] };
-let ui = { tab:'home', chip:{todo:'all', infos:'all', sorties:'resto'}, showDone:{} };
+let ui = { tab:'home', chip:{todo:'all', infos:'all', sorties:'resto'}, showDone:{}, searchOpen:false, q:'' };
 let sync = { u:null, k:null, r:null, last:0 };
 let dirty = false, pushTimer = null, polling = null;
 
@@ -362,7 +386,7 @@ function addInline(inp, tab){
   const cat = inp.dataset.cat;
   state.items.push({ id:uid(), tab, cat, text, done:false, urg:0, ts:Date.now(), del:0 });
   touch(); render();
-  const again = document.querySelector('[data-tabadd="'+tab+'"] input[data-cat="'+cat+'"], .inlineadd input[data-cat="'+cat+'"], .valadd input[data-cat="'+cat+'"]');
+  const again = document.querySelector('.inlineadd input[data-cat="'+cat+'"], .valadd input[data-cat="'+cat+'"]');
   if(again) again.focus();
 }
 function toggleItem(id){
@@ -373,6 +397,10 @@ function toggleUrgent(id){
   const it = state.items.find(i=>i.id===id); if(!it) return;
   it.urg = it.urg ? 0 : 1; it.ts = Date.now(); touch(); render();
 }
+function setRate(id, n){
+  const it = state.items.find(i=>i.id===id); if(!it) return;
+  it.rate = (it.rate===n) ? 0 : n; it.ts = Date.now(); touch(); render();
+}
 function deleteItem(id){
   const it = state.items.find(i=>i.id===id); if(!it) return;
   it.del = 1; it.ts = Date.now(); touch(); render();
@@ -382,11 +410,11 @@ function clearDone(){
   visibleItems().filter(i=>i.done).forEach(i=>{ i.del=1; i.ts=now; });
   touch(); render();
 }
-function uncheckValise(){
+function deleteAllValise(){
   const now = Date.now();
-  state.items.forEach(i=>{ if(i.tab==='valise' && !i.del && i.done){ i.done=false; i.ts=now; } });
+  state.items.forEach(i=>{ if(i.tab==='valise' && !i.del){ i.del=1; i.ts=now; } });
   touch(); render();
-  toast('Valise réinitialisée — bon week-end ! 🧳');
+  toast('Liste valise vidée 🧳');
 }
 function touch(){
   save(); dirty = true;
@@ -589,11 +617,23 @@ function renderAddBar(){
 function itemHTML(i, showTab){
   const c = catOf(i.tab, i.cat);
   const tabTag = showTab ? TABS[i.tab].icon + ' ' : '';
-  return `<div class="item ${i.done?'done':''} ${(i.urg&&!i.done)?'urgent':''}" style="border-left-color:${c.color}">
+  const isSortie = i.tab==='sorties';
+  let extra = '';
+  if(isSortie && i.done){
+    /* sortie faite : note sur 5 étoiles */
+    extra = `<div class="stars">` + [1,2,3,4,5].map(n=>
+      `<span class="${(i.rate||0)>=n?'on':''}" data-r="${n}" data-rid="${i.id}">⭐</span>`).join('') + `</div>`;
+  }
+  const mapBtn = isSortie
+    ? `<a class="mapbtn" target="_blank" rel="noopener" title="Voir sur Google Maps"
+        href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.text)}">📍</a>`
+    : '';
+  return `<div class="item ${i.done?'done':''} ${isSortie?'nostrike':''} ${(i.urg&&!i.done)?'urgent':''}" style="border-left-color:${c.color}">
     <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
     <div class="itxt"><div class="t">${esc(i.text)}</div>
-    <div class="m">${tabTag}${c.emoji} ${c.label} · ${ago(i.ts)}</div></div>
-    ${i.done?'':`<button class="flag ${i.urg?'on':''}" data-u="${i.id}" title="Urgent">🔥</button>`}
+    <div class="m">${tabTag}${c.emoji} ${c.label} · ${ago(i.ts)}</div>${extra}</div>
+    ${mapBtn}
+    ${(i.done||isSortie)?'':`<button class="flag ${i.urg?'on':''}" data-u="${i.id}" title="Urgent">🔥</button>`}
     <button class="del" data-d="${i.id}">🗑</button></div>`;
 }
 
@@ -605,13 +645,11 @@ function renderHome(){
   const dateStr = now.toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
   const h = now.getHours();
   const hi = h<5 ? 'Bonne nuit 🌙' : h<12 ? 'Bonjour ☀️' : h<18 ? 'Bon après-midi 👋' : 'Bonsoir 🌆';
-  let html = `<div class="hero"><div class="hi">${hi}</div><div class="dt">${dateStr}</div></div>`;
-  html += `<div class="tiles">` + Object.entries(VIEWS).map(([k,v])=>{
-    const n = open.filter(i=>v.tabs.includes(i.tab)).length;
-    return `<button class="tile" data-go="${k}"><div class="ic">${v.icon}</div>
-      <div class="num" style="color:${n?v.accent:'var(--ink2)'}">${n}</div>
-      <div class="lb">${v.label}</div></button>`;
-  }).join('') + `</div>`;
+  const sub = urgent.length
+    ? `🔥 <span style="color:var(--danger)">${urgent.length} chose${urgent.length>1?'s':''} urgente${urgent.length>1?'s':''}</span> · ${open.length} en cours au total`
+    : (open.length ? `😌 Rien d'urgent · ${open.length} chose${open.length>1?'s':''} en cours` : `✨ Tout est fait, profitez !`);
+  let html = `<div class="hero"><div class="hi">${hi}</div><div class="dt">${dateStr}</div>
+    <div class="sub">${sub}</div></div>`;
   html += `<div class="urgcard"><div class="grouph"><span class="dot" style="background:var(--danger)"></span>Urgent · à ne pas oublier</div>`;
   if(urgent.length){
     html += urgent.map(i=>itemHTML(i, true)).join('');
@@ -619,11 +657,15 @@ function renderHome(){
     html += `<div class="zen">😌 Rien d'urgent pour le moment.<br>Touchez le 🔥 d'un élément pour le faire apparaître ici.</div>`;
   }
   html += `</div>`;
-  const recent = open.filter(i=>!i.urg).sort((a,b)=>b.ts-a.ts).slice(0,3);
-  if(recent.length){
-    html += `<div class="grouph" style="margin-top:20px"><span class="dot" style="background:var(--commun)"></span>Ajoutés récemment</div>`;
-    html += recent.map(i=>itemHTML(i, true)).join('');
-  }
+  html += `<div class="grouph" style="margin-top:22px">Nos listes</div>`;
+  html += Object.entries(VIEWS).map(([k,v])=>{
+    const n = open.filter(i=>v.tabs.includes(i.tab)).length;
+    return `<button class="rowlink" data-go="${k}">
+      <span class="ric">${v.icon}</span>
+      <span class="rlb">${v.label}</span>
+      <span class="rcnt ${n?'':'zero'}" style="background:${v.accent}">${n}</span>
+      <span class="chev">›</span></button>`;
+  }).join('');
   box.innerHTML = html;
   bindItemEvents(box);
   box.querySelectorAll('[data-go]').forEach(b=>b.onclick = ()=>{ ui.tab = b.dataset.go; render(); });
@@ -633,6 +675,7 @@ function bindItemEvents(box){
   box.querySelectorAll('[data-t]').forEach(b=>b.onclick = ()=>toggleItem(b.dataset.t));
   box.querySelectorAll('[data-d]').forEach(b=>b.onclick = ()=>deleteItem(b.dataset.d));
   box.querySelectorAll('[data-u]').forEach(b=>b.onclick = ()=>toggleUrgent(b.dataset.u));
+  box.querySelectorAll('[data-r]').forEach(s=>s.onclick = ()=>setRate(s.dataset.rid, +s.dataset.r));
 }
 
 function renderList(){
@@ -667,8 +710,8 @@ function renderList(){
       html += `<div class="valadd"><input data-cat="${c.id}" placeholder="Ajouter…" autocomplete="off" enterkeyhint="done"><button data-valadd="${c.id}" style="background:${c.color}">+</button></div></div>`;
     }
     html += `</div>`;
-    if(done.length){
-      html += `<button class="btn ghost" id="valreset" style="margin-top:14px">↺ Tout décocher (prochain départ)</button>`;
+    if(items.length){
+      html += `<button class="btn ghost" id="valreset" style="margin-top:14px; color:var(--danger)">🗑 Tout supprimer</button>`;
     }
     if(!items.length){
       html += `<div class="valhint">🧳 Notez ici tout ce qu'il faut mettre dans la valise.<br>La liste reste d'un week-end à l'autre : cochez en préparant, décochez tout au retour !</div>`;
@@ -679,24 +722,22 @@ function renderList(){
   } else {
     if(ui.tab==='todo'){
       const chip = ui.chip.todo;
-      const notes = items.filter(i=>i.tab==='notes');
-      const achats = items.filter(i=>i.tab==='achats');
-      if(chip!=='achat' && notes.length){
-        html += `<div class="sech" style="color:var(--commun)">✅ À faire</div>`;
-        for(const th of THEMES.concat([DIVERS])){
-          const grp = notes.filter(i=>classify(i.text).id===th.id);
-          if(!grp.length) continue;
-          html += `<div class="grouph">${th.emoji} ${th.label}</div>`;
-          html += grp.map(i=>itemHTML(i)).join('');
+      /* regroupement par personne : Johan / Lou / Nous deux,
+         avec sous chaque prénom la distinction À faire et À acheter */
+      for(const p of TABS.notes.cats){
+        const notesGrp  = items.filter(i=>i.tab==='notes'  && i.cat===p.id);
+        const achatsGrp = items.filter(i=>i.tab==='achats' && i.cat===(p.id==='commun'?'maison':p.id));
+        const showNotes  = chip!=='achat' && notesGrp.length;
+        const showAchats = chip!=='todo'  && achatsGrp.length;
+        if(!showNotes && !showAchats) continue;
+        html += `<div class="sech" style="color:${p.color}">${p.emoji} ${p.label}</div>`;
+        if(showNotes){
+          html += `<div class="grouph">✅ À faire</div>`;
+          html += notesGrp.map(i=>itemHTML(i)).join('');
         }
-      }
-      if(chip!=='todo' && achats.length){
-        html += `<div class="sech" style="color:var(--achats)">🛒 À acheter</div>`;
-        for(const c of TABS.achats.cats){
-          const grp = achats.filter(i=>i.cat===c.id);
-          if(!grp.length) continue;
-          html += `<div class="grouph">${c.emoji} ${c.label}</div>`;
-          html += grp.map(i=>itemHTML(i)).join('');
+        if(showAchats){
+          html += `<div class="grouph">🛒 À acheter</div>`;
+          html += achatsGrp.map(i=>itemHTML(i)).join('');
         }
       }
     } else if(TABS[ui.tab].all && ui.chip[ui.tab]==='all'){
@@ -730,7 +771,11 @@ function renderList(){
   const cd = document.getElementById('cd');
   if(cd) cd.onclick = clearDone;
   const vr = document.getElementById('valreset');
-  if(vr) vr.onclick = uncheckValise;
+  if(vr) vr.onclick = ()=>{
+    if(vr.dataset.arm){ deleteAllValise(); }
+    else { vr.dataset.arm = '1'; vr.textContent = '⚠️ Confirmer : tout supprimer ?';
+      setTimeout(()=>{ if(vr.isConnected){ vr.dataset.arm=''; vr.textContent='🗑 Tout supprimer'; } }, 3000); }
+  };
 }
 
 function renderNav(){
@@ -738,17 +783,49 @@ function renderNav(){
   const open = state.items.filter(i=>!i.del && !i.done);
   const entries = [['home',{label:'Accueil', icon:'🏠'}]].concat(Object.entries(VIEWS));
   nav.innerHTML = entries.map(([k,t])=>{
-    const n = k==='home' ? 0 : open.filter(i=>t.tabs.includes(i.tab)).length;
+    /* pas de pastille rouge sur Infos et Sorties (ce ne sont pas des choses "à faire") */
+    const noBadge = k==='home' || k==='infos' || k==='sorties';
+    const n = noBadge ? 0 : open.filter(i=>t.tabs.includes(i.tab)).length;
     return `<button class="${ui.tab===k?'active':''}" data-tab="${k}">
       <span class="i">${t.icon}</span>${t.label}${n?`<span class="badge">${n}</span>`:''}</button>`;
   }).join('');
   nav.querySelectorAll('button').forEach(b=>b.onclick = ()=>{
-    ui.tab = b.dataset.tab; render();
+    ui.tab = b.dataset.tab; ui.searchOpen = false; render();
     document.getElementById('addInput').blur();
   });
 }
 
+function renderSearch(){
+  const box = document.getElementById('list');
+  const nq = norm(ui.q.trim());
+  if(!nq){
+    box.innerHTML = `<div class="empty"><div class="e">🔍</div><p>Tape un mot pour chercher<br>dans toutes les rubriques.</p></div>`;
+    return;
+  }
+  const results = state.items.filter(i=>!i.del && norm(i.text).includes(nq));
+  if(!results.length){
+    box.innerHTML = `<div class="empty"><div class="e">🤷</div><p>Aucun résultat pour « ${esc(ui.q)} »</p></div>`;
+    return;
+  }
+  let html = '';
+  for(const [k,v] of Object.entries(VIEWS)){
+    const grp = results.filter(i=>v.tabs.includes(i.tab)).sort((a,b)=>b.ts-a.ts);
+    if(!grp.length) continue;
+    html += `<div class="grouph">${v.icon} ${v.label} · ${grp.length}</div>`;
+    html += grp.map(i=>itemHTML(i, false)).join('');
+  }
+  box.innerHTML = html;
+  bindItemEvents(box);
+}
+
 function render(){
+  document.getElementById('searchbar').classList.toggle('show', ui.searchOpen);
+  if(ui.searchOpen){
+    document.getElementById('chips').style.display = 'none';
+    document.querySelector('.addbar').style.display = 'none';
+    renderSearch(); renderNav();
+    return;
+  }
   const noBar = ui.tab==='home' || ui.tab==='courses' || ui.tab==='valise';
   document.getElementById('chips').style.display = noBar?'none':'flex';
   document.querySelector('.addbar').style.display = noBar?'none':'flex';
@@ -789,6 +866,18 @@ document.getElementById('addInput').addEventListener('keydown', e=>{
 document.getElementById('gearBtn').onclick = ()=>{
   renderSheet(); document.getElementById('overlay').classList.add('show');
 };
+document.getElementById('searchBtn').onclick = ()=>{
+  ui.searchOpen = !ui.searchOpen; render();
+  if(ui.searchOpen) document.getElementById('searchInput').focus();
+};
+document.getElementById('searchClose').onclick = ()=>{
+  ui.searchOpen = false; ui.q = '';
+  document.getElementById('searchInput').value = '';
+  render();
+};
+document.getElementById('searchInput').addEventListener('input', e=>{
+  ui.q = e.target.value; if(ui.searchOpen) renderSearch();
+});
 document.getElementById('closeSheet').onclick = ()=>document.getElementById('overlay').classList.remove('show');
 document.getElementById('overlay').addEventListener('click', e=>{
   if(e.target.id==='overlay') e.target.classList.remove('show');
