@@ -365,6 +365,8 @@ let dirty = false, pushTimer = null, polling = null;
 function load(){
   try{ const s = localStorage.getItem('pb_state'); if(s) state = JSON.parse(s); }catch(e){}
   try{ const s = localStorage.getItem('pb_sync'); if(s) sync = Object.assign(sync, JSON.parse(s)); }catch(e){}
+  /* le repli des sections est mémorisé sur ce téléphone */
+  try{ const s = localStorage.getItem('pb_fold'); if(s) ui.fold = JSON.parse(s) || {}; }catch(e){}
   // purge vieux éléments supprimés (>45 jours)
   const cutoff = Date.now() - 45*24*3600*1000;
   state.items = (state.items||[]).filter(i => !(i.del && i.ts < cutoff));
@@ -377,6 +379,7 @@ function load(){
 }
 function save(){ localStorage.setItem('pb_state', JSON.stringify(state)); }
 function saveSync(){ localStorage.setItem('pb_sync', JSON.stringify(sync)); }
+function saveFold(){ localStorage.setItem('pb_fold', JSON.stringify(ui.fold)); }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
 
 /* ================= Mutations ================= */
@@ -756,7 +759,7 @@ function renderList(){
     html = `<div class="empty"><div class="e">${e}</div><p>${p.replace('\n','<br>')}</p></div>`;
   } else {
     if(ui.tab==='todo'){
-      /* sections par personne, repliables, lignes compactes */
+      /* sections par personne, repliables (mémorisées), lignes compactes */
       for(const p of TABS.notes.cats){
         if(ui.todoPerson!=='all' && ui.todoPerson!==p.id) continue;
         const notesGrp  = items.filter(i=>i.tab==='notes'  && personOf(i)===p.id);
@@ -793,7 +796,11 @@ function renderList(){
   box.innerHTML = html;
   bindItemEvents(box);
   box.querySelectorAll('[data-fold]').forEach(b=>{
-    b.onclick = ()=>{ ui.fold[b.dataset.fold] = !ui.fold[b.dataset.fold]; render(); };
+    b.onclick = ()=>{
+      ui.fold[b.dataset.fold] = !ui.fold[b.dataset.fold];
+      saveFold(); /* le repli reste mémorisé après fermeture de l'appli */
+      render();
+    };
   });
   box.querySelectorAll('.inlineadd input').forEach(inp=>{
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addInline(inp, 'courses'); });
