@@ -84,6 +84,26 @@
   .stars span{filter:grayscale(1); opacity:.35}
   .stars span.on{filter:none; opacity:1}
 
+  /* ---------- À faire : sections par personne + lignes compactes ---------- */
+  .pershead{display:flex; align-items:center; gap:8px; width:100%; border:none; background:none;
+    padding:16px 2px 8px; cursor:pointer; font-family:inherit; font-size:16.5px; font-weight:800;
+    text-align:left; letter-spacing:-.2px}
+  .pershead .pc{font-size:12px; font-weight:800; color:var(--ink2); background:rgba(0,0,0,.06);
+    border-radius:999px; padding:2px 9px}
+  .pershead .car{margin-left:auto; color:var(--ink2); font-size:14px}
+  .citem{display:flex; align-items:center; gap:9px; padding:9px 10px; background:var(--card);
+    border-radius:12px; box-shadow:var(--shadow); margin-bottom:6px; border-left:3px solid transparent;
+    animation:pop .18s ease}
+  .citem .ck{width:22px; height:22px; flex:0 0 22px; font-size:12px}
+  .citem.done .ck{background:#2FB344; border-color:#2FB344}
+  .citem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word}
+  .citem.done .t{text-decoration:line-through; color:var(--ink2)}
+  .citem.urgent{background:#FFF7F2; border-left-color:var(--danger)}
+  .citem .flag{font-size:14px; padding:3px}
+  .citem .del{font-size:14px; padding:3px}
+  .subh{margin:8px 2px 6px; font-size:12px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.5px; color:var(--ink2)}
+
   /* ---------- Recherche ---------- */
   .searchbar{display:none; gap:8px; padding:10px 18px 2px}
   .searchbar.show{display:flex}
@@ -321,27 +341,11 @@ const VIEWS = {
   sorties:{ label:'Sorties', icon:'🌟', accent:'var(--sorties)',tabs:['sorties'] },
   valise: { label:'Valise',  icon:'🧳', accent:'var(--valise)', tabs:['valise'] }
 };
-/* Classement automatique des "à faire" par thème (mots-clés, accents ignorés) */
-const THEMES = [
-  { id:'argent',   label:'Argent & virements', emoji:'💸',
-    kw:['virement','virer','payer','paiement','paye','facture','rembours','banque','impot','loyer','cheque','argent','euros'] },
-  { id:'appels',   label:'Appels',             emoji:'📞',
-    kw:['appel','telephon','joindre','recontacter'] },
-  { id:'rdv',      label:'Rendez-vous',        emoji:'📅',
-    kw:['rdv','rendez-vous','rendez vous','medecin','docteur','dentiste','coiffeur','veterinaire','osteo','kine','ophtalmo','dermato'] },
-  { id:'voiture',  label:'Voiture',            emoji:'🚗',
-    kw:['voiture','garage','controle technique','pneu','vidange','essence','carte grise'] },
-  { id:'demarches',label:'Démarches & mails',  emoji:'📨',
-    kw:['mail','email','envoyer','courrier','dossier','inscription','inscrire','resilier','assurance','mutuelle','caf','papier','declaration','renouveler','passeport','commander','reserver','abonnement'] },
-  { id:'maison',   label:'Maison',             emoji:'🏠',
-    kw:['reparer','ranger','nettoyer','laver','jardin','tondre','bricol','monter','installer','peindre','poubelle','linge','menage','arroser'] }
-];
-const DIVERS = { id:'divers', label:'Divers', emoji:'📌' };
 function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-function classify(text){
-  const n = norm(text);
-  for(const th of THEMES) if(th.kw.some(k=>n.includes(k))) return th;
-  return DIVERS;
+/* personne associée à un élément (les achats "Maison" comptent pour Nous deux) */
+function personOf(i){
+  if(i.tab==='achats') return i.cat==='maison' ? 'commun' : i.cat;
+  return i.cat;
 }
 
 const EMPTY = {
@@ -353,7 +357,8 @@ const SB_TABLE = 'pense_bete';
 
 /* ================= State ================= */
 let state = { v:1, items:[] };
-let ui = { tab:'home', chip:{todo:'all', infos:'all', sorties:'resto'}, showDone:{}, searchOpen:false, q:'' };
+let ui = { tab:'home', chip:{infos:'all', sorties:'resto'}, todoPerson:'all', todoType:'all',
+  fold:{}, showDone:{}, searchOpen:false, q:'' };
 let sync = { u:null, k:null, r:null, last:0 };
 let dirty = false, pushTimer = null, polling = null;
 
@@ -542,9 +547,14 @@ document.addEventListener('visibilitychange', ()=>{
 /* ================= Rendering ================= */
 function visibleItems(){
   if(ui.tab==='todo'){
-    const chip = ui.chip.todo;
-    return state.items.filter(i => !i.del && (i.tab==='notes'||i.tab==='achats') &&
-      (chip==='all' || (chip==='todo' && i.tab==='notes') || (chip==='achat' && i.tab==='achats')));
+    return state.items.filter(i=>{
+      if(i.del) return false;
+      if(i.tab!=='notes' && i.tab!=='achats') return false;
+      if(ui.todoType==='todo'  && i.tab!=='notes')  return false;
+      if(ui.todoType==='achat' && i.tab!=='achats') return false;
+      if(ui.todoPerson!=='all' && personOf(i)!==ui.todoPerson) return false;
+      return true;
+    });
   }
   if(ui.tab==='courses' || ui.tab==='valise'){
     return state.items.filter(i => i.tab===ui.tab && !i.del);
@@ -566,13 +576,18 @@ function renderChips(){
   const box = document.getElementById('chips');
   let html = '';
   if(ui.tab==='todo'){
-    const nT = state.items.filter(i=>!i.del&&!i.done&&i.tab==='notes').length;
-    const nA = state.items.filter(i=>!i.del&&!i.done&&i.tab==='achats').length;
-    const defs = [['all','Tout',nT+nA,'var(--ink)'],['todo','✅ À faire',nT,'var(--commun)'],['achat','🛒 À acheter',nA,'var(--achats)']];
-    html = defs.map(([id,label,n,col])=>{
-      const act = ui.chip.todo===id;
-      return `<button class="chip ${act?'active':''}" style="${act?'background:'+col:''}" data-c="${id}">${label} <span class="n">${n}</span></button>`;
-    }).join('');
+    const openIt = state.items.filter(i=>!i.del && !i.done && (i.tab==='notes'||i.tab==='achats'));
+    const perCnt = id => openIt.filter(i=>personOf(i)===id).length;
+    const nT = openIt.filter(i=>i.tab==='notes').length;
+    const nA = openIt.filter(i=>i.tab==='achats').length;
+    const allAct = ui.todoPerson==='all' && ui.todoType==='all';
+    html += `<button class="chip ${allAct?'active':''}" style="${allAct?'background:var(--ink)':''}" data-reset="1">Tout <span class="n">${openIt.length}</span></button>`;
+    for(const p of TABS.notes.cats){
+      const act = ui.todoPerson===p.id;
+      html += `<button class="chip ${act?'active':''}" style="${act?'background:'+p.color:''}" data-p="${p.id}">${p.emoji} ${p.label} <span class="n">${perCnt(p.id)}</span></button>`;
+    }
+    html += `<button class="chip ${ui.todoType==='todo'?'active':''}" style="${ui.todoType==='todo'?'background:var(--commun)':''}" data-ty="todo">✅ À faire <span class="n">${nT}</span></button>`;
+    html += `<button class="chip ${ui.todoType==='achat'?'active':''}" style="${ui.todoType==='achat'?'background:var(--achats)':''}" data-ty="achat">🛒 À acheter <span class="n">${nA}</span></button>`;
   } else {
     const t = TABS[ui.tab];
     const counts = {};
@@ -589,7 +604,14 @@ function renderChips(){
   }
   box.innerHTML = html;
   box.querySelectorAll('.chip').forEach(b=>b.onclick = ()=>{
-    ui.chip[ui.tab] = b.dataset.c; render();
+    if(ui.tab==='todo'){
+      if(b.dataset.reset){ ui.todoPerson='all'; ui.todoType='all'; }
+      else if(b.dataset.p){ ui.todoPerson = (ui.todoPerson===b.dataset.p) ? 'all' : b.dataset.p; }
+      else if(b.dataset.ty){ ui.todoType = (ui.todoType===b.dataset.ty) ? 'all' : b.dataset.ty; }
+    } else {
+      ui.chip[ui.tab] = b.dataset.c;
+    }
+    render();
   });
 }
 
@@ -602,7 +624,12 @@ function renderAddBar(){
       `</optgroup><optgroup label="🛒 À acheter">` +
       TABS.achats.cats.map(c=>`<option value="achats|${c.id}">${c.emoji} ${c.label}</option>`).join('') +
       `</optgroup>`;
-    sel.value = ui.chip.todo==='achat' ? 'achats|maison' : 'notes|commun';
+    const per = ui.todoPerson;
+    if(ui.todoType==='achat'){
+      sel.value = 'achats|' + (per==='commun' ? 'maison' : (per!=='all' ? per : 'maison'));
+    } else {
+      sel.value = 'notes|' + (per!=='all' ? per : 'commun');
+    }
   } else {
     const t = TABS[ui.tab];
     sel.innerHTML = t.cats.map(c=>`<option value="${ui.tab}|${c.id}">${c.emoji} ${c.label}</option>`).join('');
@@ -620,7 +647,6 @@ function itemHTML(i, showTab){
   const isSortie = i.tab==='sorties';
   let extra = '';
   if(isSortie && i.done){
-    /* sortie faite : note sur 5 étoiles */
     extra = `<div class="stars">` + [1,2,3,4,5].map(n=>
       `<span class="${(i.rate||0)>=n?'on':''}" data-r="${n}" data-rid="${i.id}">⭐</span>`).join('') + `</div>`;
   }
@@ -634,6 +660,15 @@ function itemHTML(i, showTab){
     <div class="m">${tabTag}${c.emoji} ${c.label} · ${ago(i.ts)}</div>${extra}</div>
     ${mapBtn}
     ${(i.done||isSortie)?'':`<button class="flag ${i.urg?'on':''}" data-u="${i.id}" title="Urgent">🔥</button>`}
+    <button class="del" data-d="${i.id}">🗑</button></div>`;
+}
+
+/* ligne compacte pour l'onglet À faire */
+function itemCompactHTML(i){
+  return `<div class="citem ${i.done?'done':''} ${(i.urg&&!i.done)?'urgent':''}">
+    <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
+    <div class="t">${esc(i.text)}</div>
+    ${i.done?'':`<button class="flag ${i.urg?'on':''}" data-u="${i.id}" title="Urgent">🔥</button>`}
     <button class="del" data-d="${i.id}">🗑</button></div>`;
 }
 
@@ -714,30 +749,31 @@ function renderList(){
       html += `<button class="btn ghost" id="valreset" style="margin-top:14px; color:var(--danger)">🗑 Tout supprimer</button>`;
     }
     if(!items.length){
-      html += `<div class="valhint">🧳 Notez ici tout ce qu'il faut mettre dans la valise.<br>La liste reste d'un week-end à l'autre : cochez en préparant, décochez tout au retour !</div>`;
+      html += `<div class="valhint">🧳 Notez ici tout ce qu'il faut mettre dans la valise.<br>Cochez en préparant la valise, supprimez au retour !</div>`;
     }
   } else if(!items.length){
     const [e,p] = EMPTY[ui.tab];
     html = `<div class="empty"><div class="e">${e}</div><p>${p.replace('\n','<br>')}</p></div>`;
   } else {
     if(ui.tab==='todo'){
-      const chip = ui.chip.todo;
-      /* regroupement par personne : Johan / Lou / Nous deux,
-         avec sous chaque prénom la distinction À faire et À acheter */
+      /* sections par personne, repliables, lignes compactes */
       for(const p of TABS.notes.cats){
-        const notesGrp  = items.filter(i=>i.tab==='notes'  && i.cat===p.id);
-        const achatsGrp = items.filter(i=>i.tab==='achats' && i.cat===(p.id==='commun'?'maison':p.id));
-        const showNotes  = chip!=='achat' && notesGrp.length;
-        const showAchats = chip!=='todo'  && achatsGrp.length;
-        if(!showNotes && !showAchats) continue;
-        html += `<div class="sech" style="color:${p.color}">${p.emoji} ${p.label}</div>`;
-        if(showNotes){
-          html += `<div class="grouph">✅ À faire</div>`;
-          html += notesGrp.map(i=>itemHTML(i)).join('');
+        if(ui.todoPerson!=='all' && ui.todoPerson!==p.id) continue;
+        const notesGrp  = items.filter(i=>i.tab==='notes'  && personOf(i)===p.id);
+        const achatsGrp = items.filter(i=>i.tab==='achats' && personOf(i)===p.id);
+        if(!notesGrp.length && !achatsGrp.length) continue;
+        const nOpen = notesGrp.filter(i=>!i.done).length + achatsGrp.filter(i=>!i.done).length;
+        const folded = !!ui.fold[p.id];
+        html += `<button class="pershead" data-fold="${p.id}" style="color:${p.color}">
+          ${p.emoji} ${p.label} <span class="pc">${nOpen}</span><span class="car">${folded?'▸':'▾'}</span></button>`;
+        if(folded) continue;
+        if(notesGrp.length){
+          html += `<div class="subh">✅ À faire</div>`;
+          html += notesGrp.map(i=>itemCompactHTML(i)).join('');
         }
-        if(showAchats){
-          html += `<div class="grouph">🛒 À acheter</div>`;
-          html += achatsGrp.map(i=>itemHTML(i)).join('');
+        if(achatsGrp.length){
+          html += `<div class="subh">🛒 À acheter</div>`;
+          html += achatsGrp.map(i=>itemCompactHTML(i)).join('');
         }
       }
     } else if(TABS[ui.tab].all && ui.chip[ui.tab]==='all'){
@@ -756,6 +792,9 @@ function renderList(){
   }
   box.innerHTML = html;
   bindItemEvents(box);
+  box.querySelectorAll('[data-fold]').forEach(b=>{
+    b.onclick = ()=>{ ui.fold[b.dataset.fold] = !ui.fold[b.dataset.fold]; render(); };
+  });
   box.querySelectorAll('.inlineadd input').forEach(inp=>{
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter') addInline(inp, 'courses'); });
   });
