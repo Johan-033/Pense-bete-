@@ -71,7 +71,7 @@
     color:#fff; font-size:14px; transition:.15s}
   .item.done .ck{background:#2FB344; border-color:#2FB344}
   .itxt{flex:1; min-width:0}
-  .itxt .t{font-size:15.5px; font-weight:500; word-break:break-word}
+  .itxt .t{font-size:15.5px; font-weight:500; word-break:break-word; cursor:pointer}
   .item.done .itxt .t{text-decoration:line-through; color:var(--ink2)}
   .itxt .m{font-size:12px; color:var(--ink2); margin-top:2px}
   .del{border:none; background:none; color:#CFC8BD; font-size:17px; cursor:pointer; padding:6px}
@@ -96,7 +96,7 @@
     animation:pop .18s ease}
   .citem .ck{width:22px; height:22px; flex:0 0 22px; font-size:12px}
   .citem.done .ck{background:#2FB344; border-color:#2FB344}
-  .citem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word}
+  .citem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word; cursor:pointer}
   .citem.done .t{text-decoration:line-through; color:var(--ink2)}
   .citem.urgent{background:#FFF7F2; border-left-color:var(--danger)}
   .citem .flag{font-size:14px; padding:3px}
@@ -130,7 +130,7 @@
   .vitem{display:flex; align-items:center; gap:7px; padding:7px 0; border-bottom:1px solid var(--line)}
   .vitem .ck{width:22px; height:22px; flex:0 0 22px; font-size:12px}
   .vitem.done .ck{background:#2FB344; border-color:#2FB344}
-  .vitem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word}
+  .vitem .t{flex:1; min-width:0; font-size:14.5px; font-weight:500; word-break:break-word; cursor:pointer}
   .vitem.done .t{text-decoration:line-through; color:var(--ink2)}
   .vitem .del{font-size:14px; padding:2px}
   .valadd{display:flex; gap:6px; margin-top:10px}
@@ -292,6 +292,20 @@
   </div>
 </div>
 
+<div class="overlay" id="editOverlay">
+  <div class="sheet">
+    <button class="closex" id="editCancel">✕</button>
+    <h2>Modifier</h2>
+    <div class="card" style="margin-top:10px">
+      <p><b>Texte</b></p>
+      <div class="joinrow"><input id="editText" autocomplete="off"></div>
+      <p style="margin-top:12px"><b>Emplacement</b></p>
+      <div class="joinrow"><select id="editCat" style="flex:1; border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:14px; background:var(--card); color:var(--ink)"></select></div>
+      <button class="btn primary" id="editSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -358,7 +372,7 @@ const SB_TABLE = 'pense_bete';
 /* ================= State ================= */
 let state = { v:1, items:[] };
 let ui = { tab:'home', chip:{infos:'all', sorties:'resto'}, todoPerson:'all', todoType:'all',
-  fold:{}, showDone:{}, searchOpen:false, q:'' };
+  fold:{}, showDone:{}, searchOpen:false, q:'', editing:null };
 let sync = { u:null, k:null, r:null, last:0 };
 let dirty = false, pushTimer = null, polling = null;
 
@@ -430,6 +444,41 @@ function touch(){
   pushTimer = setTimeout(doSync, 1200);
 }
 
+/* ================= Édition d'un élément ================= */
+function editOptions(tab){
+  if(tab==='notes' || tab==='achats'){
+    return `<optgroup label="✅ À faire">` +
+      TABS.notes.cats.map(c=>`<option value="notes|${c.id}">${c.emoji} ${c.label}</option>`).join('') +
+      `</optgroup><optgroup label="🛒 À acheter">` +
+      TABS.achats.cats.map(c=>`<option value="achats|${c.id}">${c.emoji} ${c.label}</option>`).join('') +
+      `</optgroup>`;
+  }
+  return TABS[tab].cats.map(c=>`<option value="${tab}|${c.id}">${c.emoji} ${c.label}</option>`).join('');
+}
+function openEdit(id){
+  const it = state.items.find(i=>i.id===id); if(!it) return;
+  ui.editing = id;
+  document.getElementById('editText').value = it.text;
+  const sel = document.getElementById('editCat');
+  sel.innerHTML = editOptions(it.tab);
+  sel.value = it.tab + '|' + it.cat;
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(()=>document.getElementById('editText').focus(), 50);
+}
+function closeEdit(){
+  ui.editing = null;
+  document.getElementById('editOverlay').classList.remove('show');
+}
+function saveEdit(){
+  const it = state.items.find(i=>i.id===ui.editing); if(!it){ closeEdit(); return; }
+  const text = document.getElementById('editText').value.trim();
+  if(!text){ toast('Le texte ne peut pas être vide'); return; }
+  const [tab, cat] = document.getElementById('editCat').value.split('|');
+  it.text = text; it.tab = tab; it.cat = cat; it.ts = Date.now();
+  touch(); closeEdit(); render();
+  toast('Modifié ✅');
+}
+
 /* ================= Sync (espace partagé) ================= */
 function setDot(cls){ const d = document.getElementById('syncdot'); d.className = 'syncdot' + (cls?' '+cls:''); }
 
@@ -481,7 +530,7 @@ async function doSync(){
     dirty = false;
     sync.last = Date.now(); saveSync();
     setDot('on');
-    if(m.changed) render();
+    if(m.changed && !ui.editing) render();
   }catch(e){
     setDot('err');
   }
@@ -657,7 +706,7 @@ function itemHTML(i, showTab){
     ? `<a class="mapbtn" target="_blank" rel="noopener" title="Voir sur Google Maps"
         href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(i.text)}">📍</a>`
     : '';
-  return `<div class="item ${i.done?'done':''} ${isSortie?'nostrike':''} ${(i.urg&&!i.done)?'urgent':''}" style="border-left-color:${c.color}">
+  return `<div class="item ${i.done?'done':''} ${isSortie?'nostrike':''} ${(i.urg&&!i.done)?'urgent':''}" style="border-left-color:${c.color}; cursor:pointer" data-edit="${i.id}">
     <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
     <div class="itxt"><div class="t">${esc(i.text)}</div>
     <div class="m">${tabTag}${c.emoji} ${c.label} · ${ago(i.ts)}</div>${extra}</div>
@@ -668,7 +717,7 @@ function itemHTML(i, showTab){
 
 /* ligne compacte pour l'onglet À faire */
 function itemCompactHTML(i){
-  return `<div class="citem ${i.done?'done':''} ${(i.urg&&!i.done)?'urgent':''}">
+  return `<div class="citem ${i.done?'done':''} ${(i.urg&&!i.done)?'urgent':''}" style="cursor:pointer" data-edit="${i.id}">
     <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
     <div class="t">${esc(i.text)}</div>
     ${i.done?'':`<button class="flag ${i.urg?'on':''}" data-u="${i.id}" title="Urgent">🔥</button>`}
@@ -714,6 +763,11 @@ function bindItemEvents(box){
   box.querySelectorAll('[data-d]').forEach(b=>b.onclick = ()=>deleteItem(b.dataset.d));
   box.querySelectorAll('[data-u]').forEach(b=>b.onclick = ()=>toggleUrgent(b.dataset.u));
   box.querySelectorAll('[data-r]').forEach(s=>s.onclick = ()=>setRate(s.dataset.rid, +s.dataset.r));
+  /* tap anywhere sur un élément (sauf boutons/liens/étoiles) pour le modifier */
+  box.querySelectorAll('[data-edit]').forEach(el=>el.addEventListener('click', e=>{
+    if(e.target.closest('button, a, .stars')) return;
+    openEdit(el.dataset.edit);
+  }));
 }
 
 function renderList(){
@@ -741,7 +795,7 @@ function renderList(){
       const nOpen = grp.filter(i=>!i.done).length;
       html += `<div class="valcol" style="border-top-color:${c.color}">
         <div class="valhead" style="color:${c.color}">${c.emoji} ${c.label}<span class="vn">${nOpen}/${grp.length}</span></div>`;
-      html += grp.map(i=>`<div class="vitem ${i.done?'done':''}">
+      html += grp.map(i=>`<div class="vitem ${i.done?'done':''}" style="cursor:pointer" data-edit="${i.id}">
         <button class="ck" data-t="${i.id}">${i.done?'✓':''}</button>
         <div class="t">${esc(i.text)}</div>
         <button class="del" data-d="${i.id}">🗑</button></div>`).join('');
@@ -927,6 +981,14 @@ document.getElementById('searchInput').addEventListener('input', e=>{
 document.getElementById('closeSheet').onclick = ()=>document.getElementById('overlay').classList.remove('show');
 document.getElementById('overlay').addEventListener('click', e=>{
   if(e.target.id==='overlay') e.target.classList.remove('show');
+});
+document.getElementById('editCancel').onclick = closeEdit;
+document.getElementById('editSave').onclick = saveEdit;
+document.getElementById('editOverlay').addEventListener('click', e=>{
+  if(e.target.id==='editOverlay') closeEdit();
+});
+document.getElementById('editText').addEventListener('keydown', e=>{
+  if(e.key==='Enter') saveEdit();
 });
 document.getElementById('createSpace').onclick = createSpace;
 document.getElementById('joinBtn').onclick = joinSpace;
